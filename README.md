@@ -23,7 +23,7 @@ Python pipeline for analysing Spherical Phenotype Clustering (SPC) embeddings wi
 
 **Python >= 3.9**
 
-See `env.yml` for complete package requirements.
+See `environment.yml` for complete package requirements.
 
 **Key dependencies:**
 - `pandas`, `numpy`, `scikit-learn`, `scipy`, `pyyaml`, `tqdm`
@@ -32,7 +32,7 @@ See `env.yml` for complete package requirements.
 ## Installation
 
 ```bash
-conda env create -f scripts/env.yml
+conda env create -f scripts/environment.yml
 conda activate cosine_distance
 ```
 
@@ -80,7 +80,7 @@ CSV file with well-level metadata containing:
 - `PP_ID`, `SMILES` - Compound identifiers
 
 ### 3. Harmony File (optional)
-CellProfiler/Harmony output for cell count information:
+Harmony output for cell count information:
 - Used for cell count correlation analysis
 - Mapped via `harmony_column_mapping` in config
 
@@ -190,9 +190,11 @@ Landmarks are identified from reference plates meeting:
 
 ### Outputs
 
-- `cellprofiler_landmarks.csv` - Identified landmark compounds
-- `reference_to_landmark_distances.csv` - Reference compound distances to landmarks
-- `test_to_landmark_distances.csv` - Test compound distances to landmarks
+- `landmarks_mad_cosine.csv` - Landmarks identified using MAD metric
+- `landmarks_var_cosine.csv` - Landmarks identified using variance metric
+- `landmarks_std_cosine.csv` - Landmarks identified using std metric
+- `reference_landmark_distances.csv` - Reference compound distances to landmarks
+- `test_landmark_distances.csv` - Test compound distances to landmarks
 
 ---
 
@@ -228,18 +230,6 @@ Generates chunked hierarchical clustering heatmaps as multi-page PDFs.
 | `test_and_all_reference_landmarks` | Test + all reference landmarks |
 | `test_valid_and_relevant_landmarks` | Valid test + relevant landmarks |
 
-### Outputs
-
-```
-hierarchical_clustering/
-├── test_and_reference_all_chunks.pdf
-├── test_only_all_chunks.pdf
-├── reference_only_all_chunks.pdf
-├── reference_landmark_all_chunks.pdf
-├── test_and_all_reference_landmarks_all_chunks.pdf
-└── test_valid_and_relevant_landmarks_all_chunks.pdf
-```
-
 ---
 
 ## Output Structure
@@ -247,37 +237,78 @@ hierarchical_clustering/
 ```
 output_dir/spc_analysis_YYYYMMDD_HHMMSS/
 ├── data/
-│   ├── config.json                    # Saved configuration
-│   ├── merged_data.csv                # Combined embeddings + metadata
-│   └── spc_for_viz_app.csv            # Final viz export (no embeddings)
+│   ├── config.json                         # Saved configuration
+│   ├── complete_merged_data.csv            # Combined embeddings + metadata
+│   ├── spc_for_viz_app.csv                 # Final viz export (no embeddings)
+│   ├── umap_embeddings.csv                 # UMAP coordinates
+│   ├── visualization_data_small.csv        # Reduced viz data
+│   └── visualization_data_treatment_agg.csv
 │
 ├── analysis/
+│   ├── compound_reference_scores.csv       # Reference compound scores
+│   ├── compound_test_scores.csv            # Test compound scores
+│   ├── landmarks_mad_cosine.csv            # Landmarks (MAD-based)
+│   ├── landmarks_var_cosine.csv            # Landmarks (variance-based)
+│   ├── landmarks_std_cosine.csv            # Landmarks (std-based)
+│   ├── landmark_embeddings.npz             # Landmark embedding vectors
 │   ├── mad_analysis/
 │   │   ├── reference_metrics.csv
 │   │   └── test_metrics.csv
 │   ├── dmso_distances/
 │   │   ├── reference_dmso_distances.csv
 │   │   └── test_dmso_distances.csv
-│   ├── landmark_distances/
-│   │   ├── reference_to_landmark_distances.csv
-│   │   └── test_to_landmark_distances.csv
-│   ├── compound_reference_scores.csv
-│   └── compound_test_scores.csv
+│   └── landmark_distances/
+│       ├── reference_landmark_distances.csv
+│       ├── test_landmark_distances.csv
+│       ├── landmark_metadata.parquet
+│       ├── reference_distances.parquet
+│       └── test_distances.parquet
 │
 └── visualizations/
-    ├── correlation/                   # Cell count correlation plots
-    ├── histograms/                    # Distribution histograms
+    ├── correlation/                        # Cell count correlation plots
+    │   ├── cell_correlation_*.html
+    │   └── static_cell_count_vs_cell_pct_*.png
+    ├── dimensionality_reduction/
+    │   ├── umap/
+    │   │   ├── umap_by_*.html              # Interactive UMAP plots
+    │   │   └── umap_combined_interactive.html
+    │   └── tsne/
+    │       ├── tsne_by_*.html              # Interactive t-SNE plots
+    │       └── tsne_combined_interactive.html
+    ├── dmso_distributions/
+    │   ├── combined/
+    │   └── by_library/
+    ├── dmso_vs_metrics/
+    │   ├── static/
+    │   ├── interactive/
+    │   └── by_metric/
+    ├── histograms/
+    │   ├── by_library/
+    │   ├── by_moa/
     │   ├── dispersion_metrics/
     │   ├── dmso_distances/
     │   ├── landmark_distances/
     │   └── scores/
-    ├── dmso_distributions/            # DMSO distance distributions
-    ├── landmark_plots/                # Landmark vs metric plots
-    ├── dmso_vs_metrics/               # DMSO distance vs dispersion
-    ├── dimensionality_reduction/      # UMAP and t-SNE plots
-    │   ├── umap/
-    │   └── tsne/
-    └── hierarchical_clustering/       # Clustering PDFs
+    ├── landmark_plots/
+    │   ├── static/
+    │   ├── interactive/
+    │   ├── combined/
+    │   └── by_metric/
+    ├── landmark_selection/                 # Landmark selection plots
+    ├── landmark_threshold_analysis/        # Threshold sensitivity analysis
+    │   ├── by_library/
+    │   ├── comparisons/
+    │   ├── distributions/
+    │   └── summary_statistics.csv
+    └── hierarchical_clustering/
+        └── hierarchical_cluster_map/
+            ├── treatment_similarity_matrix.parquet
+            ├── test_and_reference/
+            ├── test_only/
+            ├── reference_only/
+            ├── reference_landmark/
+            ├── test_and_all_reference_landmarks/
+            └── test_valid_and_relevant_landmarks/
 ```
 
 ---
@@ -338,7 +369,7 @@ Check that `spc_for_viz_app.csv` was generated successfully in the data director
 | Reference treatments | ~2,000 |
 | Test treatments | ~10,000 |
 | Identified landmarks | ~100-500 |
-| Output | Interactive HTML plots + PDF clustering |
+| Output | ~200+ interactive HTML plots + PDF clustering |
 | Time | ~1-2 hours on HPC (1TB RAM) |
 
 ---
@@ -355,3 +386,5 @@ Check that `spc_for_viz_app.csv` was generated successfully in the data director
 ## Related Repositories
 
 - [spc-distributed](https://github.com/FrancisCrickInstitute/spc-distributed) - Upstream SPC embedding generation
+- [spc-data-explorer](https://github.com/FrancisCrickInstitute/spc-data-explorer) - Interactive visualization dashboard
+- [cellprofiler_processing](https://github.com/FrancisCrickInstitute/cellprofiler_processing) - CellProfiler-based analysis pipeline
