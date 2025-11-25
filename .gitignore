@@ -1,0 +1,21 @@
+# Output data
+analysis/
+
+# Test data
+test_data/
+test_data_2/
+
+# SLURM logs
+scripts/slurm_out/
+*.out
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Structure directory
+structure/
+

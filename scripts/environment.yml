@@ -1,0 +1,21 @@
+name: cosine_distance
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - plotly
+  - umap-learn
+  - pyyaml
+  - tqdm
+  - numba
+  - pillow
+  - psutil
+  - fastcluster
+  - pyarrow
