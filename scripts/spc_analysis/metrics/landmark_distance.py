@@ -78,162 +78,6 @@ def build_comprehensive_metadata_lookup(dmso_distances, mad_df, landmark_distanc
     log_info(f"Built comprehensive metadata for {len(metadata_lookup)} treatments")
     return metadata_lookup
 
-########################################################################################
-# Deprecated old version of parquet full landmark distance files
-########################################################################################
-
-# def save_full_landmark_distances_for_viz(
-#     all_distances_data,
-#     test_metadata,
-#     landmark_metadata_lookup,
-#     is_reference,
-#     config,
-#     dir_paths,
-#     dmso_distances=None,
-#     mad_df=None,
-#     raw_df=None
-# ):
-#     """
-#     Save the full distance matrix to CSV for visualization purposes.
-    
-#     CRITICAL FIX: Now properly integrates metrics from multiple sources
-#     to ensure complete data in parquet files.
-#     """
-#     log_info("="*80)
-#     log_info("SAVING FULL LANDMARK DISTANCE MATRIX FOR VISUALIZATION")
-#     log_info("="*80)
-    
-#     log_info(f"Processing {len(all_distances_data)} treatments")
-#     log_info(f"Available metadata keys: {list(test_metadata.keys())[:5]}...")
-    
-#     # Build comprehensive metadata if additional sources provided
-#     if dmso_distances is not None or mad_df is not None:
-#         log_info("Enhancing metadata with calculated metrics...")
-#         enhanced_metadata = build_comprehensive_metadata_lookup(dmso_distances, mad_df, None, raw_df)
-        
-#         # Merge enhanced metadata into test_metadata
-#         for treatment, enhanced_data in enhanced_metadata.items():
-#             if treatment in test_metadata:
-#                 test_metadata[treatment].update(enhanced_data)
-#                 #log_info(f"Enhanced metadata for {treatment}") # Comment out
-#             else:
-#                 test_metadata[treatment] = enhanced_data
-#                 log_info(f"Added missing treatment {treatment} to metadata")
-    
-#     # Build rows for CSV
-#     rows = []
-#     treatments_with_missing_metrics = []
-    
-#     for treatment_data in tqdm(all_distances_data, desc="Building full distance matrix"):
-#         treatment = treatment_data['treatment']
-#         distances = treatment_data['distances']  # List of (landmark_name, distance) tuples
-        
-#         # Start with treatment metadata
-#         row = test_metadata.get(treatment, {})
-#         row['treatment'] = treatment
-        
-#         # CRITICAL: Check if we have the key metrics
-#         missing_metrics = []
-#         for metric in ['cosine_distance_from_dmso', 'mad_cosine', 'var_cosine', 'std_cosine']:
-#             if metric not in row or pd.isna(row.get(metric)):
-#                 missing_metrics.append(metric)
-        
-#         if missing_metrics:
-#             treatments_with_missing_metrics.append((treatment, missing_metrics))
-        
-#         # Add distances to all landmarks
-#         for i, (landmark_name, dist) in enumerate(distances, start=1):
-#             # Add distance
-#             row[f'landmark_{i}_distance'] = dist
-#             row[f'landmark_{i}_name'] = landmark_name
-            
-#             # Add landmark metadata - UPDATED WITH ALL THREE NEW COLUMNS
-#             if landmark_name in landmark_metadata_lookup:
-#                 lm_meta = landmark_metadata_lookup[landmark_name]
-#                 row[f'landmark_{i}_moa'] = lm_meta.get('moa', '')
-#                 row[f'landmark_{i}_moa_first'] = lm_meta.get('moa_first', '')
-#                 row[f'landmark_{i}_target'] = lm_meta.get('annotated_target', '')
-#                 row[f'landmark_{i}_library'] = lm_meta.get('library', '')
-#                 row[f'landmark_{i}_compound_name'] = lm_meta.get('compound_name', '')
-#                 # ADD ALL THREE NEW COLUMNS HERE:
-#                 row[f'landmark_{i}_PP_ID_uM'] = lm_meta.get('PP_ID_uM', '')
-#                 row[f'landmark_{i}_annotated_target_description'] = lm_meta.get('annotated_target_description', '')  # ADD THIS
-#                 row[f'landmark_{i}_annotated_target_description_truncated_10'] = lm_meta.get('annotated_target_description_truncated_10', '')  # MAKE SURE THIS IS HERE
-#                 # NEW: 5 additional landmark metadata columns
-#                 row[f'landmark_{i}_perturbation_name'] = lm_meta.get('perturbation_name', '')
-#                 row[f'landmark_{i}_chemical_name'] = lm_meta.get('chemical_name', '')
-#                 row[f'landmark_{i}_chemical_description'] = lm_meta.get('chemical_description', '')
-#                 row[f'landmark_{i}_compound_type'] = lm_meta.get('compound_type', '')
-#                 row[f'landmark_{i}_manual_annotation'] = lm_meta.get('manual_annotation', '')
-#             else:
-#                 row[f'landmark_{i}_moa'] = ''
-#                 row[f'landmark_{i}_moa_first'] = ''
-#                 row[f'landmark_{i}_target'] = ''
-#                 row[f'landmark_{i}_library'] = ''
-#                 row[f'landmark_{i}_compound_name'] = ''
-#                 # ADD ALL THREE NEW COLUMNS HERE TOO:
-#                 row[f'landmark_{i}_PP_ID_uM'] = ''
-#                 row[f'landmark_{i}_annotated_target_description'] = ''  # ADD THIS
-#                 row[f'landmark_{i}_annotated_target_description_truncated_10'] = ''  # ADD THIS
-#                 # NEW: Empty values for 5 additional columns when landmark not found
-#                 row[f'landmark_{i}_perturbation_name'] = ''
-#                 row[f'landmark_{i}_chemical_name'] = ''
-#                 row[f'landmark_{i}_chemical_description'] = ''
-#                 row[f'landmark_{i}_compound_type'] = ''
-#                 row[f'landmark_{i}_manual_annotation'] = ''
-        
-#         rows.append(row)
-    
-#     # Log missing metrics summary
-#     if treatments_with_missing_metrics:
-#         log_info(f"WARNING: {len(treatments_with_missing_metrics)} treatments missing key metrics:")
-#         for treatment, missing in treatments_with_missing_metrics[:10]:  # Show first 10
-#             log_info(f"  {treatment}: missing {missing}")
-#         if len(treatments_with_missing_metrics) > 10:
-#             log_info(f"  ... and {len(treatments_with_missing_metrics) - 10} more")
-    
-#     # Create DataFrame
-#     full_df = pd.DataFrame(rows)
-    
-#     log_info(f"Created DataFrame: {full_df.shape[0]} rows × {full_df.shape[1]} columns")
-    
-#     # CRITICAL: Verify key columns are present and have data
-#     key_columns_to_check = [
-#         'cosine_distance_from_dmso', 'mad_cosine', 'var_cosine', 'std_cosine',
-#         'compound_name', 'library', 'moa'
-#     ]
-    
-#     log_info("DATA VERIFICATION IN PARQUET:")
-#     for col in key_columns_to_check:
-#         if col in full_df.columns:
-#             non_null = full_df[col].notna().sum()
-#             total = len(full_df)
-#             log_info(f"  {col}: {non_null}/{total} non-null ({non_null/total*100:.1f}%)")
-#             if non_null > 0:
-#                 sample_val = full_df[col].iloc[0] if pd.notna(full_df[col].iloc[0]) else "N/A"
-#                 log_info(f"    Sample: {sample_val}")
-#         else:
-#             log_info(f"  {col}: COLUMN MISSING!")
-    
-#     # Save to Parquet
-#     output_dir = dir_paths['data']
-#     filename = f'landmark_distances_full_{"reference" if is_reference else "test"}_for_viz.parquet'
-#     output_path = output_dir / filename
-    
-#     log_info(f"Saving to: {output_path}")
-#     full_df.to_parquet(output_path, index=False, engine='pyarrow', compression='snappy')
-    
-#     # Report file size
-#     file_size_mb = output_path.stat().st_size / (1024**2)
-#     log_info(f"File size: {file_size_mb:.2f} MB")
-    
-#     # Also save as CSV for debugging
-#     csv_path = output_dir / f'landmark_distances_full_{"reference" if is_reference else "test"}_for_viz_DEBUG.csv'
-#     full_df.head(100).to_csv(csv_path, index=False)  # Save first 100 rows for debugging
-#     log_info(f"Saved debug sample to: {csv_path}")
-    
-#     return full_df
-
 
 def save_slim_landmark_parquet_files(
     treatment_centroid_dict,
@@ -782,6 +626,11 @@ def compute_landmark_distance(df, landmarks, embedding_cols, is_reference, confi
             
         # Calculate treatment centroid
         treatment_centroid_dict[treatment] = treatment_df[embedding_cols].median().values
+
+        # ADD THIS CHECK:
+        if len(treatment_centroid_dict) == 0:
+            log_info("WARNING: No valid treatments found. Returning empty DataFrame.")
+            return pd.DataFrame()
     
     # Create ordered lists for vectorized computation
     valid_treatments = list(treatment_centroid_dict.keys())

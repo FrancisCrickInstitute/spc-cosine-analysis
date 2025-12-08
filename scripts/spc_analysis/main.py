@@ -177,8 +177,17 @@ def main(config_path=None):
     
     # If we have separate test set, compute metrics for it too
     test_mad = None
-    if len(test_df) != len(reference_df) or not test_df.equals(reference_df):
-        test_mad = calculate_replicate_metrics(test_df, embedding_cols, False, config, dir_paths)
+    if len(test_df) > 0 and (len(test_df) != len(reference_df) or not test_df.equals(reference_df)):
+        # Extract reference DMSO centroid to use for test set
+        reference_dmso_centroid = None
+        if reference_dmso_dist is not None:
+            # Get DMSO samples from reference set
+            ref_dmso_df = reference_df[reference_df['treatment'].str.startswith('DMSO')]
+            if len(ref_dmso_df) > 0:
+                reference_dmso_centroid = ref_dmso_df[embedding_cols].median().values
+                log_info("Using reference DMSO centroid for test set (matching landmark_analysis.py behavior)")
+        
+        test_dmso_dist, _ = compute_dmso_distance(test_df, embedding_cols, config, dir_paths, is_reference=False, dmso_centroid=reference_dmso_centroid)
 
     # With this (add the logging):
     if analysis_type in ['all', 'dmso_distance']:
@@ -196,7 +205,7 @@ def main(config_path=None):
         
         # Compute distance from DMSO for test set if separate
         test_dmso_dist = None
-        if len(test_df) != len(reference_df) or not test_df.equals(reference_df):
+        if len(test_df) > 0 and (len(test_df) != len(reference_df) or not test_df.equals(reference_df)):
             test_dmso_dist, _ = compute_dmso_distance(test_df, embedding_cols, config, dir_paths, is_reference=False)
     else:
         reference_dmso_dist = None
@@ -248,7 +257,7 @@ def main(config_path=None):
         )
         
         # For test set, compute distances to the SAME landmarks identified from reference set
-        if len(test_df) != len(reference_df) or not test_df.equals(reference_df):
+        if len(test_df) > 0 and (len(test_df) != len(reference_df) or not test_df.equals(reference_df)):
             log_info("Computing test landmark distances WITH enhanced metadata...")
             test_landmark_dist = compute_landmark_distance(
                 test_df, 
@@ -320,14 +329,14 @@ def main(config_path=None):
     if reference_scores is not None:
         log_info(f"Reference scores available with {len(reference_scores)} rows and {len(reference_scores.columns)} columns")
         
-    if test_scores is not None and (len(test_df) != len(reference_df) or not test_df.equals(reference_df)):
+    if test_scores is not None and len(test_df) > 0 and (len(test_df) != len(reference_df) or not test_df.equals(reference_df)):
         log_info(f"Test scores available with {len(test_scores)} rows and {len(test_scores.columns)} columns")
 
     # Generate landmark vs DMSO distance plots
     if reference_scores is not None:
         generate_landmark_vs_dmso_distance_plots(reference_scores, config, dir_paths, is_reference=True)
 
-    if test_scores is not None and (len(test_df) != len(reference_df) or not test_df.equals(reference_df)):
+    if test_scores is not None and len(test_df) > 0 and (len(test_df) != len(reference_df) or not test_df.equals(reference_df)):
         generate_landmark_vs_dmso_distance_plots(test_scores, config, dir_paths, is_reference=False)
 
     # Generate DMSO distance vs dispersion metric plots

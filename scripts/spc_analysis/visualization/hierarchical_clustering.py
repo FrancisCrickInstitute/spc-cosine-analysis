@@ -49,7 +49,7 @@ def _is_test_compound(treatment, metadata_lookup, config):
     meta = metadata_lookup.get(treatment, {})
     library = meta.get('library')
     
-    if pd.notna(library) and library in test_libraries:
+    if pd.notna(library) and test_libraries is not None and library in test_libraries:
         return True
     
     return False
@@ -77,7 +77,7 @@ def _is_reference_compound(treatment, metadata_lookup, config):
     meta = metadata_lookup.get(treatment, {})
     library = meta.get('library')
     
-    if pd.notna(library) and library in reference_libraries:
+    if pd.notna(library) and reference_libraries is not None and library in reference_libraries:
         return True
     
     return False
@@ -351,8 +351,8 @@ def create_enhanced_labels(treatments, metadata_df, config):
             concentration = conc_match.group(1) if conc_match else "0.0"
         
         # Determine if test or reference using library lists
-        is_test = pd.notna(library) and library in test_libraries
-        is_ref = pd.notna(library) and library in reference_libraries
+        is_test = pd.notna(library) and test_libraries is not None and library in test_libraries
+        is_ref = pd.notna(library) and reference_libraries is not None and library in reference_libraries
         
         if is_test:
             # Test compound: PP_ID@concentration
@@ -390,8 +390,8 @@ def create_enhanced_labels(treatments, metadata_df, config):
         enhanced_labels.append(label)
     
     # Count by library type
-    test_count = sum(1 for lib in libraries if pd.notna(lib) and lib in test_libraries)
-    ref_count = sum(1 for lib in libraries if pd.notna(lib) and lib in reference_libraries)
+    test_count = sum(1 for lib in libraries if pd.notna(lib) and test_libraries is not None and lib in test_libraries)
+    ref_count = sum(1 for lib in libraries if pd.notna(lib) and reference_libraries is not None and lib in reference_libraries)
     
     log_info(f"  Test compounds: {test_count}")
     log_info(f"  Reference compounds: {ref_count}")

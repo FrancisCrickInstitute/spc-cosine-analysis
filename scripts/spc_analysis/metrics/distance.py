@@ -8,7 +8,7 @@ from scipy.spatial.distance import cosine
 from ..utils.logging import log_section, log_info
 
 
-def compute_dmso_distance(df, embedding_cols, config, dir_paths, is_reference=True):
+def compute_dmso_distance(df, embedding_cols, config, dir_paths, is_reference=True, dmso_centroid=None):
     """
     Compute distances from DMSO centroid for all treatments.
     
@@ -41,10 +41,12 @@ def compute_dmso_distance(df, embedding_cols, config, dir_paths, is_reference=Tr
     else:
         log_info(f"Found {len(dmso_df)} DMSO samples (including DMSO@X.X variants) in 'treatment' column.")
     
-    # Calculate DMSO centroid (median embedding)
-    # Using the median is more robust than mean for outlier resistance
-    dmso_centroid = dmso_df[embedding_cols].median().values
-    log_info("Calculated DMSO centroid (medianoid)")
+    # Use provided centroid or calculate from this dataset
+    if dmso_centroid is None:
+        dmso_centroid = dmso_df[embedding_cols].median().values
+        log_info("Calculated DMSO centroid (medianoid) from this dataset")
+    else:
+        log_info("Using pre-computed DMSO centroid (from reference set)")
     
     # Calculate distances between DMSO samples and DMSO centroid
     dmso_distances = []
@@ -140,6 +142,11 @@ def compute_dmso_distance(df, embedding_cols, config, dir_paths, is_reference=Tr
                     result['library'] = 'Unknown'
         
         treatment_distances.append(result)
+
+        # EARLY EXIT: Check if we have any treatment distances
+        if len(treatment_distances) == 0:
+            log_info("WARNING: No valid treatment distances calculated. Returning empty DataFrame.")
+            return pd.DataFrame(), thresholds
     
     # Convert to DataFrame
     distance_df = pd.DataFrame(treatment_distances)
