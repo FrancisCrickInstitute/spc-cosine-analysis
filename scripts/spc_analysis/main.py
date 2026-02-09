@@ -234,6 +234,18 @@ def main(config_path=None):
             landmark_count = merged_df['is_self_landmark'].sum()
             log_info(f"Marked {landmark_count} rows as is_self_landmark=True in merged_df")
             log_info(f"Unique landmark treatments in merged_df: {merged_df[merged_df['is_self_landmark']]['treatment'].nunique()}")
+
+            # Add is_landmark column to reference_mad and re-save
+            if reference_mad is not None:
+                reference_mad['is_landmark'] = reference_mad['treatment'].isin(landmark_treatments)
+                landmark_in_mad = reference_mad['is_landmark'].sum()
+                log_info(f"Added is_landmark column to reference_mad: {landmark_in_mad} landmarks out of {len(reference_mad)} treatments")
+                
+                # Re-save reference_metrics.csv with the new column
+                output_path = dir_paths['analysis']['mad'] / 'reference_metrics.csv'
+                reference_mad.to_csv(output_path, index=False)
+                log_info(f"Re-saved reference_metrics.csv with is_landmark column to: {output_path}")
+
         else:
             log_info("No landmarks identified - setting is_self_landmark=False for all")
             merged_df['is_self_landmark'] = False
