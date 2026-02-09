@@ -235,16 +235,35 @@ def main(config_path=None):
             log_info(f"Marked {landmark_count} rows as is_self_landmark=True in merged_df")
             log_info(f"Unique landmark treatments in merged_df: {merged_df[merged_df['is_self_landmark']]['treatment'].nunique()}")
 
-            # Add is_landmark column to reference_mad and re-save
+            # ======================================================================
+            # ADD is_landmark TO reference_metrics.csv
+            # ======================================================================
             if reference_mad is not None:
                 reference_mad['is_landmark'] = reference_mad['treatment'].isin(landmark_treatments)
                 landmark_in_mad = reference_mad['is_landmark'].sum()
                 log_info(f"Added is_landmark column to reference_mad: {landmark_in_mad} landmarks out of {len(reference_mad)} treatments")
                 
-                # Re-save reference_metrics.csv with the new column
                 output_path = dir_paths['analysis']['mad'] / 'reference_metrics.csv'
                 reference_mad.to_csv(output_path, index=False)
                 log_info(f"Re-saved reference_metrics.csv with is_landmark column to: {output_path}")
+
+            # ======================================================================
+            # ADD mad_cosine AND is_landmark TO reference_dmso_distances.csv
+            # ======================================================================
+            if reference_dmso_dist is not None and reference_mad is not None:
+                # Add mad_cosine from reference_mad
+                mad_subset = reference_mad[['treatment', 'mad_cosine']].copy()
+                reference_dmso_dist = reference_dmso_dist.merge(mad_subset, on='treatment', how='left')
+                log_info(f"Added mad_cosine to reference_dmso_dist: {reference_dmso_dist['mad_cosine'].notna().sum()} non-null values")
+                
+                # Add is_landmark
+                reference_dmso_dist['is_landmark'] = reference_dmso_dist['treatment'].isin(landmark_treatments)
+                landmark_in_dmso = reference_dmso_dist['is_landmark'].sum()
+                log_info(f"Added is_landmark column to reference_dmso_dist: {landmark_in_dmso} landmarks out of {len(reference_dmso_dist)} treatments")
+                
+                output_path = dir_paths['analysis']['dmso_distances'] / 'reference_dmso_distances.csv'
+                reference_dmso_dist.to_csv(output_path, index=False)
+                log_info(f"Re-saved reference_dmso_distances.csv with mad_cosine and is_landmark columns to: {output_path}")
 
         else:
             log_info("No landmarks identified - setting is_self_landmark=False for all")
