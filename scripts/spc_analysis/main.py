@@ -174,22 +174,13 @@ def main(config_path=None):
     log_info(f"reference_mad columns: {reference_mad.columns.tolist()}")
     for metric in ['mad_cosine', 'var_cosine', 'std_cosine']:
         log_info(f"'{metric}' in reference_mad: {metric in reference_mad.columns}")
+
+    # Initialise before use
+    reference_dmso_dist = None
     
     # If we have separate test set, compute metrics for it too
     test_mad = None
-    if len(test_df) > 0 and (len(test_df) != len(reference_df) or not test_df.equals(reference_df)):
-        # Extract reference DMSO centroid to use for test set
-        reference_dmso_centroid = None
-        if reference_dmso_dist is not None:
-            # Get DMSO samples from reference set
-            ref_dmso_df = reference_df[reference_df['treatment'].str.startswith('DMSO')]
-            if len(ref_dmso_df) > 0:
-                reference_dmso_centroid = ref_dmso_df[embedding_cols].median().values
-                log_info("Using reference DMSO centroid for test set (matching landmark_analysis.py behavior)")
-        
-        test_dmso_dist, _ = compute_dmso_distance(test_df, embedding_cols, config, dir_paths, is_reference=False, dmso_centroid=reference_dmso_centroid)
 
-    # With this (add the logging):
     if analysis_type in ['all', 'dmso_distance']:
         reference_dmso_dist, dmso_thresholds = compute_dmso_distance(reference_df, embedding_cols, config, dir_paths, is_reference=True)
         
