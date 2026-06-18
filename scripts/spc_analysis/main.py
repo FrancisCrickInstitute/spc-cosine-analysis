@@ -182,7 +182,8 @@ def main(config_path=None):
     test_mad = None
 
     if analysis_type in ['all', 'dmso_distance']:
-        reference_dmso_dist, dmso_thresholds = compute_dmso_distance(reference_df, embedding_cols, config, dir_paths, is_reference=True)
+        reference_dmso_dist, dmso_thresholds, reference_dmso_centroid = compute_dmso_distance(
+        reference_df, embedding_cols, config, dir_paths, is_reference=True)
         
         # CRITICAL: Add thresholds to config for later use
         if dmso_thresholds:
@@ -197,7 +198,9 @@ def main(config_path=None):
         # Compute distance from DMSO for test set if separate
         test_dmso_dist = None
         if len(test_df) > 0 and (len(test_df) != len(reference_df) or not test_df.equals(reference_df)):
-            test_dmso_dist, _ = compute_dmso_distance(test_df, embedding_cols, config, dir_paths, is_reference=False)
+            test_dmso_dist, _, _ = compute_dmso_distance(
+            test_df, embedding_cols, config, dir_paths, is_reference=False,
+            dmso_centroid=reference_dmso_centroid)
     else:
         reference_dmso_dist = None
         test_dmso_dist = None

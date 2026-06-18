@@ -178,4 +178,4 @@ def compute_dmso_distance(df, embedding_cols, config, dir_paths, is_reference=Tr
         distance_df.to_csv(output_path, index=False)
         log_info(f"Saved {label} DMSO distance results to: {output_path}")
     
-    return distance_df, thresholds
+    return distance_df, thresholds, dmso_centroid
